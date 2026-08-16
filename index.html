@@ -7,7 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="市場情緒">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0B0E11">
+<meta name="theme-color" content="#2F6FED">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%232F6FED'/%3E%3Cstop offset='1' stop-color='%23134FCB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Cpath d='M20 100 L60 100 L72 70 L88 130 L100 60 L112 100 L160 100' fill='none' stroke='%23FFFFFF' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <title>市場情緒 · Sentiment Pulse</title>
 <style>
   :root{
@@ -17,6 +18,8 @@
     --line:#232830;
     --text:#E8EAED;
     --muted:#7C8494;
+    --brand:#2F6FED;
+    --brand-dim:rgba(47,111,237,0.14);
     --bull:#00D48A;
     --bull-dim:rgba(0,212,138,0.14);
     --bear:#FF4D5E;
@@ -37,13 +40,26 @@
     padding-top:env(safe-area-inset-top);
     padding-bottom:env(safe-area-inset-bottom);
   }
+  .status-bar-fill{
+    position:fixed;top:0;left:0;right:0;
+    height:env(safe-area-inset-top);
+    background:var(--brand);
+    z-index:100;
+  }
   .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
 
   /* ---- Header / Pulse ---- */
   header{padding:18px 18px 14px;border-bottom:1px solid var(--line);}
-  .top-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .brand{font-size:15px;letter-spacing:0.06em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;}
+  .top-actions{display:flex;align-items:center;gap:10px;}
   .clock{font-size:12px;font-family:var(--mono);color:var(--muted);}
+  .icon-btn{
+    width:30px;height:30px;border-radius:9px;background:var(--surface);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+    color:var(--muted);cursor:pointer;font-size:15px;
+  }
+  .icon-btn:active{background:var(--surface-2);}
 
   .pulse-card{
     background:linear-gradient(180deg,var(--surface-2),var(--surface));
@@ -69,7 +85,47 @@
     background:var(--surface);border:1px solid var(--line);
     cursor:pointer;user-select:none;transition:.15s ease;
   }
-  .tab.active{color:var(--bg);background:var(--text);border-color:var(--text);}
+  .tab.active{color:#fff;background:var(--brand);border-color:var(--brand);}
+
+  /* ---- Settings Sheet ---- */
+  .sheet-backdrop{
+    position:fixed;inset:0;background:rgba(0,0,0,0.55);
+    display:none;align-items:flex-end;justify-content:center;z-index:200;
+  }
+  .sheet-backdrop.open{display:flex;}
+  .sheet{
+    width:100%;max-width:520px;background:var(--surface);
+    border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:none;
+    padding:16px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height:82vh;overflow-y:auto;
+  }
+  .sheet h3{margin:4px 0 12px;font-size:16px;}
+  .sheet-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .sheet-tab{flex:1;text-align:center;padding:8px 0;border-radius:9px;font-size:13px;font-weight:600;
+    background:var(--surface-2);color:var(--muted);border:1px solid var(--line);cursor:pointer;}
+  .sheet-tab.active{background:var(--brand);color:#fff;border-color:var(--brand);}
+  .sheet-panel{display:none;}
+  .sheet-panel.active{display:block;}
+  .field-label{font-size:12px;color:var(--muted);margin:12px 0 6px;font-family:var(--mono);}
+  .field-input, .field-select, .field-textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    color:var(--text);padding:10px 12px;font-size:14px;font-family:var(--sans);
+  }
+  .field-textarea{min-height:64px;resize:vertical;}
+  .btn-primary{
+    width:100%;margin-top:16px;padding:12px 0;border-radius:11px;border:none;
+    background:var(--brand);color:#fff;font-size:15px;font-weight:700;cursor:pointer;
+  }
+  .swatch-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+  .swatch{
+    width:38px;height:38px;border-radius:50%;border:2px solid transparent;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .swatch.selected{border-color:#fff;}
+  .my-ticker-row{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    padding:8px 12px;margin-top:8px;font-size:13px;}
+  .remove-x{color:var(--bear);font-size:13px;cursor:pointer;padding:2px 8px;}
 
   /* ---- Feed ---- */
   .feed{flex:1;padding:6px 14px 100px;}
@@ -116,11 +172,15 @@
 </style>
 </head>
 <body>
+<div class="status-bar-fill"></div>
 <div class="app">
   <header>
     <div class="top-row">
       <span class="brand">市場情緒 · Sentiment Pulse</span>
-      <span class="clock" id="clock">--:--</span>
+      <div class="top-actions">
+        <span class="clock" id="clock">--:--</span>
+        <div class="icon-btn" id="settingsBtn">⚙</div>
+      </div>
     </div>
     <div class="pulse-card">
       <div class="pulse-label">綜合情緒指數 · 港股 + 美股</div>
@@ -144,9 +204,150 @@
   <footer>來源標示於各卡片 · 情緒判讀為關鍵字模型，僅供參考，非投資建議</footer>
 </div>
 
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet">
+    <h3>設定</h3>
+    <div class="sheet-tabs">
+      <div class="sheet-tab active" data-p="addTicker">新增股票</div>
+      <div class="sheet-tab" data-p="theme">主題色</div>
+    </div>
+
+    <div class="sheet-panel active" id="panel-addTicker">
+      <div class="field-label">股票代碼</div>
+      <input class="field-input" id="inTicker" placeholder="例如 0700.HK 或 NVDA">
+      <div class="field-label">市場</div>
+      <select class="field-select" id="inMarket">
+        <option value="hk">港股</option>
+        <option value="us">美股</option>
+      </select>
+      <div class="field-label">新聞內容（貼上標題或重點）</div>
+      <textarea class="field-textarea" id="inText" placeholder="例如：公司季度業績優於預期，股價大漲"></textarea>
+      <div class="field-label">來源（選填）</div>
+      <input class="field-input" id="inSrc" placeholder="例如 自訂 / 鉅亨網">
+      <button class="btn-primary" id="addTickerBtn">加入新聞卡</button>
+      <div id="myTickerList"></div>
+    </div>
+
+    <div class="sheet-panel" id="panel-theme">
+      <div class="field-label">選擇主題色</div>
+      <div class="swatch-row" id="swatchRow"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const THEMES = {
+  blue:{name:'藍', hex:'#2F6FED', hex2:'#134FCB'},
+  green:{name:'綠', hex:'#00B87C', hex2:'#007A52'},
+  purple:{name:'紫', hex:'#8B5CF6', hex2:'#5B3AC4'},
+  amber:{name:'金', hex:'#F5A524', hex2:'#B87400'},
+  rose:{name:'玫瑰', hex:'#F43F6E', hex2:'#B4204A'},
+};
+
+function applyTheme(key){
+  const t = THEMES[key] || THEMES.blue;
+  document.documentElement.style.setProperty('--brand', t.hex);
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', t.hex);
+  const icon = document.querySelector('link[rel="apple-touch-icon"]');
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${t.hex}'/><stop offset='1' stop-color='${t.hex2}'/></linearGradient></defs><rect width='180' height='180' rx='40' fill='url(%23g)'/><path d='M20 100 L60 100 L72 70 L88 130 L100 60 L112 100 L160 100' fill='none' stroke='%23FFFFFF' stroke-width='9' stroke-linecap='round' stroke-linejoin='round'/></svg>`;
+  icon.setAttribute('href', 'data:image/svg+xml,' + encodeURIComponent(svg).replace(/'/g,'%27'));
+  localStorage.setItem('sp_theme', key);
+  renderSwatches(key);
+}
+
+function renderSwatches(active){
+  const row = document.getElementById('swatchRow');
+  row.innerHTML = '';
+  Object.keys(THEMES).forEach(key=>{
+    const t = THEMES[key];
+    const el = document.createElement('div');
+    el.className = 'swatch' + (key===active ? ' selected' : '');
+    el.style.background = t.hex;
+    el.title = t.name;
+    el.addEventListener('click', ()=>applyTheme(key));
+    row.appendChild(el);
+  });
+}
+
+// ---- Settings sheet open/close ----
+const backdrop = document.getElementById('sheetBackdrop');
+document.getElementById('settingsBtn').addEventListener('click', ()=>backdrop.classList.add('open'));
+backdrop.addEventListener('click', (e)=>{ if(e.target === backdrop) backdrop.classList.remove('open'); });
+
+document.querySelectorAll('.sheet-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.sheet-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.sheet-panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.p).classList.add('active');
+  });
+});
+
+// ---- My tickers (localStorage) ----
+function loadMyTickers(){
+  try{ return JSON.parse(localStorage.getItem('sp_my_tickers') || '[]'); }
+  catch(e){ return []; }
+}
+function saveMyTickers(list){ localStorage.setItem('sp_my_tickers', JSON.stringify(list)); }
+
+function renderMyTickerList(){
+  const list = loadMyTickers();
+  const wrap = document.getElementById('myTickerList');
+  wrap.innerHTML = list.length ? '<div class="field-label" style="margin-top:16px;">已加入的自訂新聞</div>' : '';
+  list.forEach((item, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'my-ticker-row';
+    row.innerHTML = `<span>${item.ticker} · ${item.text.slice(0,16)}...</span><span class="remove-x" data-idx="${idx}">移除</span>`;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('.remove-x').forEach(x=>{
+    x.addEventListener('click', ()=>{
+      const list = loadMyTickers();
+      list.splice(parseInt(x.dataset.idx), 1);
+      saveMyTickers(list);
+      rebuildFeedWithCustom();
+      renderMyTickerList();
+    });
+  });
+}
+
+document.getElementById('addTickerBtn').addEventListener('click', ()=>{
+  const ticker = document.getElementById('inTicker').value.trim();
+  const market = document.getElementById('inMarket').value;
+  const text = document.getElementById('inText').value.trim();
+  const src = document.getElementById('inSrc').value.trim() || '自訂';
+  if(!ticker || !text){ alert('請填寫股票代碼和新聞內容'); return; }
+  const list = loadMyTickers();
+  list.unshift({ticker, market, text, src});
+  saveMyTickers(list);
+  document.getElementById('inTicker').value = '';
+  document.getElementById('inText').value = '';
+  document.getElementById('inSrc').value = '';
+  rebuildFeedWithCustom();
+  renderMyTickerList();
+});
+
+function rebuildFeedWithCustom(){
+  const custom = loadMyTickers();
+  const combined = [...custom, ...NEWS];
+  window.__ITEMS = buildItems(combined);
+  render();
+  updatePulse();
+}
+
+// init on load
+renderMyTickerList();
+applyTheme(localStorage.getItem('sp_theme') || 'blue');
+rebuildFeedWithCustom();
+</script>
+
+</body>
+
 <script>
 // ---- Seed data (paraphrased headlines, HK + US) ----
 const NEWS = [
+  {ticker:"0981.HK", market:"hk", src:"Yahoo奇摩股市", text:"中芯國際單日股價大漲逾10%，成交量顯著放大，收復近期部分跌幅"},
+  {ticker:"0981.HK", market:"hk", src:"格隆匯", text:"國產芯片巨頭業績周將至，市場關注中芯國際等半導體龍頭本季財報表現"},
   {ticker:"AMAT", market:"us", src:"經濟日報", text:"應用材料上季財報與財測優於華爾街預期並調升全年營收展望，但股價盤前仍重挫逾5%，反映市場期待更高"},
   {ticker:"0001.HK", market:"hk", src:"香港01", text:"長和中期純利大增近三十倍，負債比率降至歷史新低，管理層強調嚴格控管成本"},
   {ticker:"MU", market:"us", src:"鉅亨網", text:"美光股價逼近千美元關口，多家華爾街機構上調目標價，記憶體漲價週期持續發酵"},
@@ -183,6 +384,16 @@ const items = NEWS.map(n=>{
   return {...n, raw, cls: cls.label, clsText: cls.text, conf};
 });
 
+function buildItems(list){
+  return list.map(n=>{
+    const raw = scoreText(n.text);
+    const cls = classify(raw);
+    const conf = Math.min(95, 55 + Math.abs(raw)*14);
+    return {...n, raw, cls: cls.label, clsText: cls.text, conf};
+  });
+}
+window.__ITEMS = items;
+
 // ---- Render feed ----
 const feed = document.getElementById('feed');
 let currentFilter = 'all';
@@ -191,7 +402,7 @@ function marketFlag(m){ return m === 'hk' ? '🇭🇰 港股' : '🇺🇸 美股
 
 function render(){
   feed.innerHTML = '';
-  const list = items.filter(i => currentFilter === 'all' || i.market === currentFilter);
+  const list = window.__ITEMS.filter(i => currentFilter === 'all' || i.market === currentFilter);
   list.forEach(i=>{
     const card = document.createElement('div');
     card.className = 'card';
@@ -222,7 +433,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
 
 // ---- Aggregate pulse ----
 function updatePulse(){
-  const list = items.filter(i => currentFilter === 'all' || i.market === currentFilter);
+  const list = window.__ITEMS.filter(i => currentFilter === 'all' || i.market === currentFilter);
   const bulls = list.filter(i=>i.cls==='bull').length;
   const bears = list.filter(i=>i.cls==='bear').length;
   const neus = list.filter(i=>i.cls==='neu').length;
