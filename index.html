@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="市場情緒">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B0E11">
+<title>市場情緒 · Sentiment Pulse</title>
+<style>
+  :root{
+    --bg:#0B0E11;
+    --surface:#12161C;
+    --surface-2:#181D24;
+    --line:#232830;
+    --text:#E8EAED;
+    --muted:#7C8494;
+    --bull:#00D48A;
+    --bull-dim:rgba(0,212,138,0.14);
+    --bear:#FF4D5E;
+    --bear-dim:rgba(255,77,94,0.14);
+    --neutral:#FFB443;
+    --neutral-dim:rgba(255,180,67,0.14);
+    --mono:'SF Mono','SFMono-Regular','Menlo','Consolas',monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:var(--sans);
+    height:100%;
+    overscroll-behavior-y:contain;
+  }
+  body{
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---- Header / Pulse ---- */
+  header{padding:18px 18px 14px;border-bottom:1px solid var(--line);}
+  .top-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;}
+  .brand{font-size:15px;letter-spacing:0.06em;color:var(--muted);font-family:var(--mono);text-transform:uppercase;}
+  .clock{font-size:12px;font-family:var(--mono);color:var(--muted);}
+
+  .pulse-card{
+    background:linear-gradient(180deg,var(--surface-2),var(--surface));
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px 16px 10px;
+    position:relative;
+    overflow:hidden;
+  }
+  .pulse-label{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono);}
+  .pulse-score-row{display:flex;align-items:flex-end;gap:10px;margin-top:6px;}
+  .pulse-score{font-family:var(--mono);font-size:40px;font-weight:600;line-height:1;}
+  .pulse-tag{font-size:13px;font-weight:600;padding:4px 10px;border-radius:100px;margin-bottom:6px;}
+  #pulseCanvasWrap{margin-top:12px;height:46px;position:relative;}
+  svg#pulseSvg{width:100%;height:100%;display:block;}
+  .pulse-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px;padding-bottom:4px;}
+
+  /* ---- Tabs ---- */
+  .tabs{display:flex;gap:8px;padding:14px 18px 4px;}
+  .tab{
+    flex:1;text-align:center;padding:9px 0;border-radius:10px;
+    font-size:14px;font-weight:600;color:var(--muted);
+    background:var(--surface);border:1px solid var(--line);
+    cursor:pointer;user-select:none;transition:.15s ease;
+  }
+  .tab.active{color:var(--bg);background:var(--text);border-color:var(--text);}
+
+  /* ---- Feed ---- */
+  .feed{flex:1;padding:6px 14px 100px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 14px 12px;
+    margin:10px 4px;
+    position:relative;
+  }
+  .card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .ticker-pill{
+    font-family:var(--mono);font-size:11.5px;font-weight:700;
+    color:var(--bg);background:var(--text);
+    padding:2px 8px;border-radius:6px;letter-spacing:.02em;
+  }
+  .market-flag{font-size:11px;color:var(--muted);font-family:var(--mono);margin-left:8px;}
+  .sent-badge{
+    display:flex;align-items:center;gap:5px;
+    font-size:12px;font-weight:700;padding:3px 9px;border-radius:100px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;}
+  .headline{font-size:15.5px;line-height:1.45;margin:2px 0 8px;color:var(--text);}
+  .card-bottom{display:flex;justify-content:space-between;align-items:center;}
+  .source{font-size:11.5px;color:var(--muted);}
+  .conf{font-size:11px;color:var(--muted);font-family:var(--mono);}
+
+  .bull{color:var(--bull);background:var(--bull-dim);}
+  .bear{color:var(--bear);background:var(--bear-dim);}
+  .neu{color:var(--neutral);background:var(--neutral-dim);}
+  .dot.bull{background:var(--bull);}
+  .dot.bear{background:var(--bear);}
+  .dot.neu{background:var(--neutral);}
+
+  footer{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:520px;margin:0 auto;
+    padding:10px 18px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,var(--bg) 60%,transparent);
+    text-align:center;font-size:10.5px;color:var(--muted);font-family:var(--mono);
+    pointer-events:none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="top-row">
+      <span class="brand">市場情緒 · Sentiment Pulse</span>
+      <span class="clock" id="clock">--:--</span>
+    </div>
+    <div class="pulse-card">
+      <div class="pulse-label">綜合情緒指數 · 港股 + 美股</div>
+      <div class="pulse-score-row">
+        <div class="pulse-score" id="pulseScore">--</div>
+        <div class="pulse-tag" id="pulseTag">計算中</div>
+      </div>
+      <div id="pulseCanvasWrap"><svg id="pulseSvg" viewBox="0 0 300 46" preserveAspectRatio="none"></svg></div>
+      <div class="pulse-sub"><span id="bullCount">利多 --</span><span id="neuCount">中性 --</span><span id="bearCount">利空 --</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-f="all">全部</div>
+    <div class="tab" data-f="hk">港股</div>
+    <div class="tab" data-f="us">美股</div>
+  </div>
+
+  <div class="feed" id="feed"></div>
+
+  <footer>來源標示於各卡片 · 情緒判讀為關鍵字模型，僅供參考，非投資建議</footer>
+</div>
+
+<script>
+// ---- Seed data (paraphrased headlines, HK + US) ----
+const NEWS = [
+  {ticker:"AMAT", market:"us", src:"經濟日報", text:"應用材料上季財報與財測優於華爾街預期並調升全年營收展望，但股價盤前仍重挫逾5%，反映市場期待更高"},
+  {ticker:"0001.HK", market:"hk", src:"香港01", text:"長和中期純利大增近三十倍，負債比率降至歷史新低，管理層強調嚴格控管成本"},
+  {ticker:"MU", market:"us", src:"鉅亨網", text:"美光股價逼近千美元關口，多家華爾街機構上調目標價，記憶體漲價週期持續發酵"},
+  {ticker:"SNDK", market:"us", src:"鉅亨網", text:"SanDisk 兩週內股價反彈逾六成，投資人日公布的財測與技術藍圖帶動樂觀情緒"},
+  {ticker:"US-TECH", market:"us", src:"鉅亨網", text:"四大科技巨頭財報季將至，加上聯準會利率決議登場，市場預期短線恐迎劇烈波動"},
+  {ticker:"SPCX", market:"us", src:"Investing.com", text:"摩根士丹利點名多項催化劑，看好SpaceX年底前股價表現，AI與星艦進展是關鍵"},
+  {ticker:"ORCL", market:"us", src:"Investing.com", text:"甲骨文AI數據中心關鍵天然氣管道延期近半年，市場憂心雲端擴張進度受拖累"},
+  {ticker:"AAPL", market:"us", src:"Investing.com", text:"傳美國向蘋果施壓，要求避免採購中國製記憶體晶片，供應鏈布局添增不確定性"},
+  {ticker:"VIX", market:"us", src:"AAStocks", text:"VIX恐慌指數處於低位，專家警告市場過度樂觀，平靜過後恐迎更猛烈賣壓"},
+  {ticker:"US-RETAIL", market:"us", src:"經濟日報", text:"美國七月零售銷售數據意外低於市場預期，消費動能露出降溫跡象"},
+];
+
+// ---- Lightweight keyword sentiment model ----
+const BULL_KW = ["優於預期","上調","調升","大增","新低","反彈","看好","樂觀","漲價","上漲","催化劑","強勁","突破"];
+const BEAR_KW = ["重挫","延期","施壓","不確定","警告","跌勢","降溫","低於預期","拖累","恐迎","劇烈波動","賣壓","憂心"];
+
+function scoreText(t){
+  let s = 0;
+  BULL_KW.forEach(k=>{ if(t.includes(k)) s += 1; });
+  BEAR_KW.forEach(k=>{ if(t.includes(k)) s -= 1; });
+  return s;
+}
+
+function classify(s){
+  if(s >= 1) return {label:"bull", text:"利多"};
+  if(s <= -1) return {label:"bear", text:"利空"};
+  return {label:"neu", text:"中性"};
+}
+
+const items = NEWS.map(n=>{
+  const raw = scoreText(n.text);
+  const cls = classify(raw);
+  const conf = Math.min(95, 55 + Math.abs(raw)*14);
+  return {...n, raw, cls: cls.label, clsText: cls.text, conf};
+});
+
+// ---- Render feed ----
+const feed = document.getElementById('feed');
+let currentFilter = 'all';
+
+function marketFlag(m){ return m === 'hk' ? '🇭🇰 港股' : '🇺🇸 美股'; }
+
+function render(){
+  feed.innerHTML = '';
+  const list = items.filter(i => currentFilter === 'all' || i.market === currentFilter);
+  list.forEach(i=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-top">
+        <div><span class="ticker-pill">${i.ticker}</span><span class="market-flag">${marketFlag(i.market)}</span></div>
+        <div class="sent-badge ${i.cls}"><span class="dot ${i.cls}"></span>${i.clsText}</div>
+      </div>
+      <div class="headline">${i.text}</div>
+      <div class="card-bottom">
+        <span class="source">${i.src}</span>
+        <span class="conf">信心度 ${i.conf}%</span>
+      </div>
+    `;
+    feed.appendChild(card);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentFilter = tab.dataset.f;
+    render();
+    updatePulse();
+  });
+});
+
+// ---- Aggregate pulse ----
+function updatePulse(){
+  const list = items.filter(i => currentFilter === 'all' || i.market === currentFilter);
+  const bulls = list.filter(i=>i.cls==='bull').length;
+  const bears = list.filter(i=>i.cls==='bear').length;
+  const neus = list.filter(i=>i.cls==='neu').length;
+  const total = list.length || 1;
+  const score = Math.round(((bulls - bears) / total) * 100);
+
+  document.getElementById('pulseScore').textContent = (score>0?'+':'') + score;
+  document.getElementById('bullCount').textContent = '利多 ' + bulls;
+  document.getElementById('neuCount').textContent = '中性 ' + neus;
+  document.getElementById('bearCount').textContent = '利空 ' + bears;
+
+  const tag = document.getElementById('pulseTag');
+  const scoreEl = document.getElementById('pulseScore');
+  let mood, cls;
+  if(score >= 20){ mood='偏多'; cls='bull'; }
+  else if(score <= -20){ mood='偏空'; cls='bear'; }
+  else { mood='中性'; cls='neu'; }
+  tag.textContent = mood;
+  tag.className = 'pulse-tag ' + cls;
+  scoreEl.style.color = cls==='bull' ? 'var(--bull)' : cls==='bear' ? 'var(--bear)' : 'var(--neutral)';
+
+  drawPulseLine(list, cls);
+}
+
+function drawPulseLine(list, cls){
+  const svg = document.getElementById('pulseSvg');
+  const w = 300, h = 46, mid = h/2;
+  const color = cls==='bull' ? '#00D48A' : cls==='bear' ? '#FF4D5E' : '#FFB443';
+  let d = `M 0 ${mid}`;
+  const n = Math.max(list.length, 6);
+  const step = w / n;
+  list.forEach((it, idx)=>{
+    const x = idx*step + step*0.4;
+    const amp = it.cls==='bull' ? -14 : it.cls==='bear' ? 14 : 4*(idx%2===0?1:-1);
+    d += ` L ${x.toFixed(1)} ${mid} L ${(x+step*0.18).toFixed(1)} ${(mid+amp).toFixed(1)} L ${(x+step*0.36).toFixed(1)} ${mid}`;
+  });
+  d += ` L ${w} ${mid}`;
+  svg.innerHTML = `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+}
+
+// ---- Clock ----
+function tickClock(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${hh}:${mm}`;
+}
+tickClock();
+setInterval(tickClock, 15000);
+
+render();
+updatePulse();
+</script>
+</body>
+</html>
