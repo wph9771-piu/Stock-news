@@ -507,13 +507,26 @@ document.getElementById('addTickerBtn').addEventListener('click', ()=>{
   if(url) entry.url = url;
   list.unshift(entry);
   saveMyTickers(list);
-  document.getElementById('inTicker').value = '';
+  // keep 股票代碼／市場／來源／原文網址 filled for next time — only clear 新聞內容
+  localStorage.setItem('sp_default_ticker', ticker);
+  localStorage.setItem('sp_default_market', market);
+  localStorage.setItem('sp_default_src', document.getElementById('inSrc').value.trim());
+  localStorage.setItem('sp_default_url', document.getElementById('inUrl').value.trim());
   document.getElementById('inText').value = '';
-  document.getElementById('inSrc').value = '';
-  document.getElementById('inUrl').value = '';
   rebuildFeed();
   renderMyTickerList();
 });
+
+function loadFormDefaults(){
+  const t = localStorage.getItem('sp_default_ticker');
+  const m = localStorage.getItem('sp_default_market');
+  const s = localStorage.getItem('sp_default_src');
+  const u = localStorage.getItem('sp_default_url');
+  if(t) document.getElementById('inTicker').value = t;
+  if(m) document.getElementById('inMarket').value = m;
+  if(s) document.getElementById('inSrc').value = s;
+  if(u) document.getElementById('inUrl').value = u;
+}
 
 // ================= Live news (Finnhub) =================
 let liveItemsRaw = [];
@@ -616,6 +629,7 @@ function rebuildFeed(){
 
 // ================= Init =================
 renderMyTickerList();
+loadFormDefaults();
 applyTheme(localStorage.getItem('sp_theme') || 'blue');
 
 const savedKey = finnhubKey();
