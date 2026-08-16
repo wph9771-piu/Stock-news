@@ -251,6 +251,8 @@
       <textarea class="field-textarea" id="inText" placeholder="例如：公司季度業績優於預期，股價大漲"></textarea>
       <div class="field-label">來源（選填）</div>
       <input class="field-input" id="inSrc" placeholder="例如 自訂 / 鉅亨網">
+      <div class="field-label">原文網址（選填，有填才能點開）</div>
+      <input class="field-input" id="inUrl" placeholder="https://...">
       <button class="btn-primary" id="addTickerBtn">加入新聞卡</button>
       <div id="myTickerList"></div>
     </div>
@@ -497,13 +499,18 @@ document.getElementById('addTickerBtn').addEventListener('click', ()=>{
   const market = document.getElementById('inMarket').value;
   const text = document.getElementById('inText').value.trim();
   const src = document.getElementById('inSrc').value.trim() || '自訂';
+  let url = document.getElementById('inUrl').value.trim();
+  if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
   if(!ticker || !text){ alert('請填寫股票代碼和新聞內容'); return; }
   const list = loadMyTickers();
-  list.unshift({ticker, market, text, src});
+  const entry = {ticker, market, text, src};
+  if(url) entry.url = url;
+  list.unshift(entry);
   saveMyTickers(list);
   document.getElementById('inTicker').value = '';
   document.getElementById('inText').value = '';
   document.getElementById('inSrc').value = '';
+  document.getElementById('inUrl').value = '';
   rebuildFeed();
   renderMyTickerList();
 });
